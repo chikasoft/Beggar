@@ -4,6 +4,7 @@ use std::collections::VecDeque;
 use std::env;
 use std::fs;
 use std::io::Result as IOResult;
+use std::time::Instant;
 
 use crossbeam::{channel, thread};
 
@@ -291,6 +292,7 @@ fn main() -> IOResult<()> {
 
     println!("Generating {} new permutations to test...", games_to_test);
     let mut permutations_generated = 0;
+    let gen_start_time = Instant::now();
     {
         unsafe { HASHES_TO_TEST.reserve_exact(games_to_test) };
 
@@ -313,6 +315,7 @@ fn main() -> IOResult<()> {
         }
     }
 
+    let gen_end_time = gen_start_time.elapsed().as_secs_f64();
     println!("Generated {} new permutations.", permutations_generated);
 
     if permutations_generated % threads_to_use != 0 {
@@ -333,6 +336,7 @@ fn main() -> IOResult<()> {
     );
 
     let (sender, receiver) = channel::unbounded();
+    let test_start_time = Instant::now();
 
     thread::scope(|s| {
         for i in 0..threads_to_use {
@@ -407,6 +411,7 @@ fn main() -> IOResult<()> {
     .unwrap();
 
     drop(sender);
+    let test_end_time = test_start_time.elapsed().as_secs_f64();
     println!("Collecting and analyzing thread results...");
 
     let mut actual_suspicious_games = 0;
@@ -440,6 +445,8 @@ fn main() -> IOResult<()> {
     println!();
 
     println!("--- ONE-OFF STATS ---");
+    println!("Game Gen Time:  {:.3}", gen_end_time);
+    println!("Game Test Time: {:.3}", test_end_time);
     println!("Suspicious Games: {:5}", actual_suspicious_games);
     println!();
 
