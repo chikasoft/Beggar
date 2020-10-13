@@ -412,6 +412,7 @@ fn main() -> IOResult<()> {
 
     drop(sender);
     let test_end_time = test_start_time.elapsed().as_secs_f64();
+    let entire_end_time = gen_start_time.elapsed().as_secs_f64();
     println!("Collecting and analyzing thread results...");
 
     let mut actual_suspicious_games = 0;
@@ -445,9 +446,11 @@ fn main() -> IOResult<()> {
     println!();
 
     println!("--- ONE-OFF STATS ---");
-    println!("Game Gen Time:  {:.3}", gen_end_time);
-    println!("Game Test Time: {:.3}", test_end_time);
-    println!("Suspicious Games: {:5}", actual_suspicious_games);
+    println!("Game Gen Time:     {:.3} s", gen_end_time);
+    println!("Game Test Time:    {:.3} s", test_end_time);
+    println!("Game Total Time:   {:.3} s", entire_end_time);
+    println!("Suspicious Games:  {} games", actual_suspicious_games);
+    println!("Last Created Game: [{}]", last_tested_hash);
     println!();
 
     println!("Saving results...");
