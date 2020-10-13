@@ -150,6 +150,7 @@ fn simulate_game(
                         if player1.len() > 0 {
                             GameState::Player2Draw
                         } else {
+                            turns += 1;
                             break 'game_loop;
                         }
                     } else {
@@ -167,6 +168,7 @@ fn simulate_game(
                         if player2.len() > 0 {
                             GameState::Player1Draw
                         } else {
+                            turns += 1;
                             break 'game_loop;
                         }
                     } else {
@@ -187,6 +189,7 @@ fn simulate_game(
                             if player1.len() > 0 {
                                 continue 'p1_pay_loop;
                             } else {
+                                turns += 1;
                                 break 'game_loop;
                             }
                         } else {
@@ -218,6 +221,7 @@ fn simulate_game(
                             if player2.len() > 0 {
                                 continue 'p2_pay_loop;
                             } else {
+                                turns += 1;
                                 break 'game_loop;
                             }
                         } else {
