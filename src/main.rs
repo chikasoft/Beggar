@@ -434,7 +434,7 @@ fn main() -> IOResult<()> {
         actual_suspicious_games += data.suspicious_games;
     }
 
-    println!("--- ALL TIME STATS ---");
+    println!("--- ALL-TIME STATS ---");
     println!(
         "Most Turns:  {:10} turns [{}]",
         actual_most_turns, actual_most_hash
