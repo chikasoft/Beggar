@@ -292,6 +292,8 @@ fn main() -> IOResult<()> {
     println!("Generating {} new permutations to test...", games_to_test);
     let mut permutations_generated = 0;
     {
+        unsafe { HASHES_TO_TEST.reserve_exact(games_to_test) };
+
         let permutation_percent = 100.0 / games_to_test as f64;
         let mut tmp_game = get_array_from_hash(&last_tested_hash);
 

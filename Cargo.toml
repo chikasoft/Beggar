@@ -1,5 +1,5 @@
 [package]
-name = "beggar_test"
+name = "beggar"
 version = "0.1.0"
 authors = ["CHIKASOFT"]
 edition = "2018"
