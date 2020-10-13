@@ -292,6 +292,7 @@ fn main() -> IOResult<()> {
     println!("Generating {} new permutations to test...", games_to_test);
     let mut permutations_generated = 0;
     {
+        let permutation_percent = 100.0 / games_to_test as f64;
         let mut tmp_game = get_array_from_hash(&last_tested_hash);
 
         for _ in 0..games_to_test {
@@ -299,7 +300,11 @@ fn main() -> IOResult<()> {
                 permutations_generated += 1;
                 get_hash_from_array(&tmp_game, &mut last_tested_hash);
                 unsafe { HASHES_TO_TEST.push(last_tested_hash.clone()) };
-                println!("{}", last_tested_hash);
+                println!(
+                    "[{}] - {:.2}%",
+                    last_tested_hash,
+                    permutations_generated as f64 * permutation_percent
+                );
             } else {
                 break;
             }
