@@ -243,7 +243,6 @@ fn simulate_game(
             continue 'game_loop;
         } else {
             suspicious = true;
-            println!("!!!!!!!!!!!!!!!!!! SUSPICIOUS GAME");
             break 'game_loop;
         }
     }
@@ -422,6 +421,7 @@ fn main() -> IOResult<()> {
         actual_suspicious_games += data.suspicious_games;
     }
 
+    println!("--- ALL TIME STATS ---");
     println!(
         "Most Turns:  {:10} turns [{}]",
         actual_most_turns, actual_most_hash
@@ -430,8 +430,13 @@ fn main() -> IOResult<()> {
         "Least Turns: {:10} turns [{}]",
         actual_least_turns, actual_least_hash
     );
+    println!();
+
+    println!("--- ONE-OFF STATS ---");
     println!("Suspicious Games: {:5}", actual_suspicious_games);
-    println!("\nSaving results...");
+    println!();
+
+    println!("Saving results...");
 
     fs::write(
         CACHE_FILE,
