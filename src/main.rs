@@ -2,8 +2,8 @@ extern crate crossbeam;
 
 use std::collections::VecDeque;
 use std::env;
-use std::fs::{self, File};
-use std::io::{BufRead, BufReader, Result as IOResult};
+use std::fs;
+use std::io::Result as IOResult;
 
 use crossbeam::{channel, thread};
 
@@ -12,13 +12,12 @@ const HAND_SIZE: usize = 26;
 
 const TURN_CUTOFF: usize = 10000;
 
-const CACHE_FILE: &'static str = "test_cache.txt";
-const PERMUTATION_FILE: &'static str = "permutations.txt";
+const CACHE_FILE: &'static str = "cache.txt";
 
 static mut HASHES_TO_TEST: Vec<String> = Vec::new();
 
 #[repr(usize)]
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Card {
     Blank = 0,
     Jack = 1,
@@ -57,6 +56,41 @@ struct ThreadData {
     least_hash: String,
 }
 
+fn get_array_from_hash(hash: &String) -> [Card; 52] {
+    assert_eq!(hash.len(), 52);
+
+    let mut i = 0;
+    let mut array = [Card::Blank; 52];
+
+    for c in hash.chars() {
+        match c {
+            'J' => array[i] = Card::Jack,
+            'Q' => array[i] = Card::Queen,
+            'K' => array[i] = Card::King,
+            'A' => array[i] = Card::Ace,
+            _ => {}
+        }
+
+        i += 1;
+    }
+
+    array
+}
+
+fn get_hash_from_array(array: &[Card], hash: &mut String) {
+    hash.clear();
+
+    for card in array {
+        hash.push(match card {
+            Card::Blank => '-',
+            Card::Jack => 'J',
+            Card::Queen => 'Q',
+            Card::King => 'K',
+            Card::Ace => 'A',
+        });
+    }
+}
+
 fn get_players_from_hash(hash: &str, player1: &mut VecDeque<Card>, player2: &mut VecDeque<Card>) {
     for c in hash.chars().take(HAND_SIZE) {
         player1.push_back(Card::from_char(c));
@@ -65,6 +99,33 @@ fn get_players_from_hash(hash: &str, player1: &mut VecDeque<Card>, player2: &mut
     for c in hash.chars().skip(HAND_SIZE).take(HAND_SIZE) {
         player2.push_back(Card::from_char(c));
     }
+}
+
+fn has_next_permutation(array: &mut [Card]) -> bool {
+    if array.is_empty() {
+        return false;
+    }
+
+    let mut i = array.len() - 1;
+
+    while i > 0 && array[i - 1] >= array[i] {
+        i -= 1;
+    }
+
+    if i == 0 {
+        return false;
+    }
+
+    let mut j = array.len() - 1;
+
+    while array[j] <= array[i - 1] {
+        j -= 1;
+    }
+
+    array.swap(i - 1, j);
+    array[i..].reverse();
+
+    true
 }
 
 fn simulate_game(
@@ -193,6 +254,7 @@ fn simulate_game(
 fn main() -> IOResult<()> {
     let mut args = env::args();
     let _ = args.next();
+    let games_to_test = args.next().unwrap().parse::<usize>().unwrap();
     let threads_to_use = args.next().unwrap().parse::<usize>().unwrap();
 
     if threads_to_use == 0 {
@@ -215,11 +277,6 @@ fn main() -> IOResult<()> {
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(usize::MAX);
 
-    let mut actual_suspicious_games = splitted_results
-        .next()
-        .and_then(|s| s.parse::<usize>().ok())
-        .unwrap_or_default();
-
     let mut actual_most_hash = splitted_results
         .next()
         .map_or_else(|| String::new(), |s| s.to_owned());
@@ -228,32 +285,42 @@ fn main() -> IOResult<()> {
         .next()
         .map_or_else(|| String::new(), |s| s.to_owned());
 
-    println!("Loading permutations to test...");
+    let mut last_tested_hash = splitted_results.next().map_or_else(
+        || "------------------------------------JJJJQQQQKKKKAAAA".to_owned(),
+        |s| s.to_owned(),
+    );
 
-    let file = File::open(PERMUTATION_FILE)?;
+    println!("Generating {} new permutations to test...", games_to_test);
+    let mut permutations_generated = 0;
+    {
+        let mut tmp_game = get_array_from_hash(&last_tested_hash);
 
-    for line in BufReader::new(file).lines() {
-        let line = line?;
-
-        if line.len() > 0 {
-            unsafe { HASHES_TO_TEST.push(line) };
+        for _ in 0..games_to_test {
+            if has_next_permutation(&mut tmp_game) {
+                permutations_generated += 1;
+                get_hash_from_array(&tmp_game, &mut last_tested_hash);
+                unsafe { HASHES_TO_TEST.push(last_tested_hash.clone()) };
+                println!("{}", last_tested_hash);
+            } else {
+                break;
+            }
         }
     }
 
-    let hash_count = unsafe { HASHES_TO_TEST.len() };
+    println!("Generated {} new permutations.", permutations_generated);
 
-    if hash_count % threads_to_use != 0 {
+    if permutations_generated % threads_to_use != 0 {
         println!(
             "The thread count must be a multiple of the hashes to test ({}).",
-            hash_count
+            permutations_generated
         );
 
         return Ok(());
     }
 
-    let hashes_per_thread = hash_count / threads_to_use;
+    let hashes_per_thread = permutations_generated / threads_to_use;
 
-    println!("\nTesting {} hashes in total.", hash_count);
+    println!("\nTesting {} hashes in total.", permutations_generated);
     println!(
         "Starting {} threads to test {} hashes each...",
         threads_to_use, hashes_per_thread
@@ -336,6 +403,8 @@ fn main() -> IOResult<()> {
     drop(sender);
     println!("Collecting and analyzing thread results...");
 
+    let mut actual_suspicious_games = 0;
+
     for data in receiver.iter() {
         let most_turns = data.most_turns;
         let least_turns = data.least_turns;
@@ -370,13 +439,11 @@ fn main() -> IOResult<()> {
             "{} {} {} {} {}",
             actual_most_turns,
             actual_least_turns,
-            actual_suspicious_games,
             actual_most_hash,
-            actual_least_hash
+            actual_least_hash,
+            last_tested_hash
         ),
     )?;
-
-    fs::remove_file(PERMUTATION_FILE)?;
 
     println!("Done.");
 

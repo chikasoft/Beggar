@@ -1,5 +1,8 @@
-[workspace]
-members = [
-	"beggar_gen",
-	"beggar_test",
-]
+[package]
+name = "beggar_test"
+version = "0.1.0"
+authors = ["CHIKASOFT"]
+edition = "2018"
+
+[dependencies]
+crossbeam = "0.8"
