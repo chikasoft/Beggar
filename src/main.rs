@@ -57,11 +57,11 @@ struct ThreadData {
     least_hash: String,
 }
 
-fn get_array_from_hash(hash: &String) -> [Card; 52] {
-    assert_eq!(hash.len(), 52);
+fn get_array_from_hash(hash: &String) -> [Card; DECK_SIZE] {
+    assert_eq!(hash.len(), DECK_SIZE);
 
     let mut i = 0;
-    let mut array = [Card::Blank; 52];
+    let mut array = [Card::Blank; DECK_SIZE];
 
     for c in hash.chars() {
         match c {
@@ -150,7 +150,6 @@ fn simulate_game(
                         if player1.len() > 0 {
                             GameState::Player2Draw
                         } else {
-                            turns += 1;
                             break 'game_loop;
                         }
                     } else {
@@ -168,7 +167,6 @@ fn simulate_game(
                         if player2.len() > 0 {
                             GameState::Player1Draw
                         } else {
-                            turns += 1;
                             break 'game_loop;
                         }
                     } else {
@@ -189,7 +187,6 @@ fn simulate_game(
                             if player1.len() > 0 {
                                 continue 'p1_pay_loop;
                             } else {
-                                turns += 1;
                                 break 'game_loop;
                             }
                         } else {
@@ -221,7 +218,6 @@ fn simulate_game(
                             if player2.len() > 0 {
                                 continue 'p2_pay_loop;
                             } else {
-                                turns += 1;
                                 break 'game_loop;
                             }
                         } else {
